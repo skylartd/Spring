@@ -1,12 +1,14 @@
 package com.tacocloud;
 
 import com.tacocloud.data.IngredientRepository;
+import com.tacocloud.data.TacoRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -26,9 +28,23 @@ public class DesignTacoController {
 
     private final IngredientRepository ingredientRepository;
 
+    private TacoRepository tacoRepository;
+
     @Autowired
-    public DesignTacoController(IngredientRepository ingredientRepository) {
+    public DesignTacoController(IngredientRepository ingredientRepository,
+                                TacoRepository tacoRepository) {
         this.ingredientRepository = ingredientRepository;
+        this.tacoRepository = tacoRepository;
+    }
+
+    @ModelAttribute(name="order")
+    public Order order() {
+        return new Order();
+    }
+
+    @ModelAttribute(name="design")
+    public Taco design() {
+        return new Taco();
     }
 
     @GetMapping
@@ -42,17 +58,18 @@ public class DesignTacoController {
                     filterByType(ingredients, type));
         }
 
-        model.addAttribute("design", new Taco());
-
         return "design";
     }
 
     @PostMapping
-    public String processDesign(@Valid Taco design, Errors errors) {
+    public String processDesign(@Valid Taco design, Errors errors,
+                                @ModelAttribute Order order) {
         if (errors.hasErrors()) {
             return "design";
         }
-        // Save the taco design
+
+        Taco saved = tacoRepository.save(design);
+        order.addDesign(saved);
         log.info("Processing design: " + design);
 
         return "redirect:/orders/current";
